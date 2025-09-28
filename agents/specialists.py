@@ -1,6 +1,6 @@
 from typing import List
 from langchain.schema import HumanMessage, SystemMessage, BaseMessage
-from langchain_community.chat_models import ChatLiteLLM
+from langchain_litellm import ChatLiteLLM
 from agents.prompts import (
     ROUTER_PROMPT, DBT_PROMPT, IFS_PROMPT, 
     TRE_PROMPT, MEMORY_PROMPT
@@ -17,6 +17,48 @@ class BaseAgent:
         self.system_prompt = system_prompt
         self.name = name
     
+    @staticmethod
+    def _normalize_content(raw_content) -> str:
+        """Приводит ответы разных моделей к простой строке."""
+
+        collected: List[str] = []
+        visited = set()
+
+        def collect(value):
+            key = id(value)
+            if key in visited:
+                return
+            visited.add(key)
+
+            if value is None:
+                return
+            if isinstance(value, str):
+                collected.append(value)
+                return
+            if isinstance(value, (int, float)):
+                collected.append(str(value))
+                return
+            if isinstance(value, list):
+                for item in value:
+                    collect(item)
+                return
+            if isinstance(value, dict):
+                for possible_key in ("text", "content", "output_text", "message", "value"):
+                    if possible_key in value:
+                        collect(value[possible_key])
+                return
+            if hasattr(value, "text"):
+                collect(getattr(value, "text"))
+                return
+            if hasattr(value, "content"):
+                collect(getattr(value, "content"))
+                return
+            collected.append(str(value))
+
+        collect(raw_content)
+
+        return "".join(collected)
+    
     def process(self, user_message: str, context: List[BaseMessage] = None) -> str:
         messages = [SystemMessage(content=self.system_prompt)]
         
@@ -28,7 +70,18 @@ class BaseAgent:
         
         try:
             response = self.llm.invoke(messages)
-            return response.content
+            normalized = self._normalize_content(response.content)
+            if not normalized.strip():
+                extra = getattr(response, "additional_kwargs", {})
+                print(f"[DEBUG {self.name}] Empty normalized content. Raw: {response.content!r}")
+                print(f"[DEBUG {self.name}] Full response repr: {response!r}")
+                if extra:
+                    print(f"[DEBUG {self.name}] additional_kwargs: {extra}")
+                    normalized = self._normalize_content(extra.get("content"))
+                meta = getattr(response, "response_metadata", None)
+                if (not normalized.strip()) and meta:
+                    print(f"[DEBUG {self.name}] response_metadata: {meta}")
+            return normalized
         except Exception as e:
             print(f"Ошибка в {self.name}: {e}")
             return f"Ошибка обработки: {str(e)}"

@@ -5,9 +5,9 @@ load_dotenv()
 
 # LiteLLM configuration - поддерживает любого провайдера
 LITELLM_CONFIG = {
-    "model": os.getenv("MODEL", "gpt-3.5-turbo"),  # Модель по умолчанию
-    "temperature": 0.7,
-    "max_tokens": 500,
+    "model": os.getenv("MODEL", "gpt-4o-mini"),  # Модель по умолчанию
+    "temperature": 1.0,
+    "max_tokens": 5000,
 }
 
 # Примеры моделей:

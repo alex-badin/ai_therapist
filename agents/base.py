@@ -1,11 +1,7 @@
-from typing import Dict, List, Optional, Any
-from langchain.schema import BaseMessage, HumanMessage, SystemMessage, AIMessage
-from langchain_community.chat_models import ChatLiteLLM
-from langchain.output_parsers import JsonOutputParser
-from langgraph.graph import StateGraph, END
+from typing import Dict, List, Optional
 from typing import TypedDict, Annotated
+from langchain.schema import BaseMessage
 import operator
-import json
 
 # Определяем состояние для LangGraph
 class TherapyState(TypedDict):
