@@ -45,9 +45,10 @@ if _STREAMLIT_AVAILABLE:
         """Fetch the prompt table from Google Sheets."""
 
         conn = st.connection("gsheets", type=GSheetsConnection)
+        read_kwargs = {"ttl": 0}
         if worksheet:
-            return conn.read(worksheet=worksheet)
-        return conn.read()
+            return conn.read(worksheet=worksheet, **read_kwargs)
+        return conn.read(**read_kwargs)
 
 else:  # pragma: no cover - executed outside Streamlit runtime
 
@@ -168,10 +169,11 @@ class PromptStore:
 
         try:
             conn = st.connection("gsheets", type=GSheetsConnection)
+            read_kwargs = {"ttl": 0}
             if self.worksheet:
-                table = conn.read(worksheet=self.worksheet)
+                table = conn.read(worksheet=self.worksheet, **read_kwargs)
             else:
-                table = conn.read()
+                table = conn.read(**read_kwargs)
         except Exception as exc:
             self.last_error = str(exc)
             self.enabled = False
