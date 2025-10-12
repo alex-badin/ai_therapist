@@ -16,6 +16,11 @@ class BaseAgent:
         self.llm = ChatLiteLLM(**LITELLM_CONFIG)
         self.system_prompt = system_prompt
         self.name = name
+
+    def set_system_prompt(self, prompt: str) -> None:
+        """Update the system prompt used by the agent."""
+
+        self.system_prompt = prompt
     
     @staticmethod
     def _normalize_content(raw_content) -> str:
@@ -89,8 +94,8 @@ class BaseAgent:
 class RouterAgent(BaseAgent):
     """Агент маршрутизации"""
     
-    def __init__(self):
-        super().__init__(ROUTER_PROMPT, "Router")
+    def __init__(self, system_prompt: str = ROUTER_PROMPT):
+        super().__init__(system_prompt, "Router")
     
     def route(self, state: TherapyState) -> TherapyState:
         """Определяет подходящий терапевтический подход"""
@@ -118,8 +123,8 @@ class RouterAgent(BaseAgent):
         return state
 
 class DBTAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(DBT_PROMPT, "DBT Specialist")
+    def __init__(self, system_prompt: str = DBT_PROMPT):
+        super().__init__(system_prompt, "DBT Specialist")
     
     def respond(self, state: TherapyState) -> TherapyState:
         response = self.process(state["user_message"], state.get("messages", []))
@@ -127,8 +132,8 @@ class DBTAgent(BaseAgent):
         return state
 
 class IFSAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(IFS_PROMPT, "IFS Specialist")
+    def __init__(self, system_prompt: str = IFS_PROMPT):
+        super().__init__(system_prompt, "IFS Specialist")
     
     def respond(self, state: TherapyState) -> TherapyState:
         response = self.process(state["user_message"], state.get("messages", []))
@@ -136,8 +141,8 @@ class IFSAgent(BaseAgent):
         return state
 
 class TREAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(TRE_PROMPT, "TRE Specialist")
+    def __init__(self, system_prompt: str = TRE_PROMPT):
+        super().__init__(system_prompt, "TRE Specialist")
     
     def respond(self, state: TherapyState) -> TherapyState:
         response = self.process(state["user_message"], state.get("messages", []))
@@ -145,8 +150,8 @@ class TREAgent(BaseAgent):
         return state
 
 class MemoryAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(MEMORY_PROMPT, "Memory")
+    def __init__(self, system_prompt: str = MEMORY_PROMPT):
+        super().__init__(system_prompt, "Memory")
     
     def extract(self, state: TherapyState) -> TherapyState:
         # Создаем контекст для анализа

@@ -1,7 +1,27 @@
-import streamlit as st
-from core.orchestrator import TherapyOrchestrator
-import time
 import json
+
+import streamlit as st
+
+import agents.prompts as prompt_defaults
+from core.orchestrator import TherapyOrchestrator
+from services.prompt_store import PROMPT_KEYS, PromptStore
+
+
+PROMPT_LABELS = {
+    "router": "Маршрутизатор",
+    "dbt": "DBT",
+    "ifs": "IFS",
+    "tre": "TRE",
+    "memory": "Память",
+}
+
+DEFAULT_PROMPTS = {
+    "router": prompt_defaults.ROUTER_PROMPT,
+    "dbt": prompt_defaults.DBT_PROMPT,
+    "ifs": prompt_defaults.IFS_PROMPT,
+    "tre": prompt_defaults.TRE_PROMPT,
+    "memory": prompt_defaults.MEMORY_PROMPT,
+}
 
 st.set_page_config(
     page_title="Терапевтическая Система",
@@ -10,14 +30,81 @@ st.set_page_config(
 )
 
 # Инициализация состояния сессии
+if 'prompt_store' not in st.session_state:
+    st.session_state.prompt_store = PromptStore()
+
 if 'orchestrator' not in st.session_state:
-    st.session_state.orchestrator = TherapyOrchestrator(use_memory=True)
+    st.session_state.orchestrator = TherapyOrchestrator(
+        use_memory=True,
+        prompt_store=st.session_state.prompt_store,
+    )
     st.session_state.session_id = st.session_state.orchestrator.start_session()
     st.session_state.messages = []
 
 # Заголовок
 st.title("🧠 Мультиагентная Терапевтическая Система")
 st.warning("⚠️ Образовательная демонстрация - не для реального терапевтического использования")
+
+# Боковая панель: управление промптами и экспорт
+prompt_store = st.session_state.prompt_store
+
+with st.sidebar:
+    st.subheader("⚙️ Настройки")
+    st.caption(f"Google Sheets: {prompt_store.status()}")
+
+    if prompt_store.enabled:
+        overrides = prompt_store.load_all()
+        current_prompts = dict(DEFAULT_PROMPTS)
+        for key, record in overrides.items():
+            if record.prompt:
+                current_prompts[key] = record.prompt
+
+        with st.form("prompt_editor"):
+            st.markdown("**🛠️ Редактор промптов**")
+            edited_prompts = {}
+            for key in PROMPT_KEYS:
+                label = PROMPT_LABELS.get(key, key.upper())
+                edited_prompts[key] = st.text_area(
+                    label,
+                    current_prompts.get(key, DEFAULT_PROMPTS[key]),
+                    height=160,
+                )
+
+            default_name = st.session_state.get("prompt_editor_name", "")
+            editor_name = st.text_input("Имя редактора (необязательно)", value=default_name)
+            submitted = st.form_submit_button("💾 Сохранить промпты")
+
+        if submitted:
+            st.session_state["prompt_editor_name"] = editor_name
+            normalized_name = editor_name.strip() or None
+            changes_made = False
+            errors = []
+
+            for key, new_value in edited_prompts.items():
+                existing_record = overrides.get(key)
+                existing_value = (
+                    existing_record.prompt if existing_record and existing_record.prompt else DEFAULT_PROMPTS[key]
+                )
+                if new_value != existing_value:
+                    success = prompt_store.update_prompt(key, new_value, updated_by=normalized_name)
+                    if not success:
+                        errors.append(key)
+                        break
+                    changes_made = True
+
+            if errors:
+                readable = ", ".join(PROMPT_LABELS.get(key, key) for key in errors)
+                st.error(f"Не удалось обновить промпт(ы): {readable}")
+            elif changes_made:
+                st.session_state.orchestrator.refresh_prompts()
+                st.success("Промпты обновлены")
+                st.rerun()
+            else:
+                st.info("Изменений не обнаружено")
+    else:
+        st.info("Редактирование промптов отключено. Проверьте настройки Google Sheets в secrets.toml.")
+
+    st.divider()
 
 # Описание подходов
 with st.expander("ℹ️ О терапевтических подходах"):

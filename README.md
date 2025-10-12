@@ -48,9 +48,9 @@ git clone <repository-url>
 cd ai_therapist
 ```
 
-2. Установите зависимости:
+2. Установите зависимости через [uv](https://docs.astral.sh/uv/):
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 3. Настройте переменные окружения:
@@ -64,13 +64,13 @@ cp .env.example .env
 ### CLI интерфейс
 
 ```bash
-python main.py
+uv run python main.py
 ```
 
 ### Веб-интерфейс (Streamlit)
 
 ```bash
-streamlit run app.py
+uv run streamlit run app.py
 ```
 
 ## Поддерживаемые модели
@@ -92,6 +92,14 @@ streamlit run app.py
 MODEL=gpt-4
 OPENAI_API_KEY=your-key-here
 ```
+
+### Google Sheets для промптов
+
+1. Создайте Google-таблицу с колонками `key`, `prompt`, `updated_at`, `updated_by` и заполните строки для `router`, `dbt`, `ifs`, `tre`, `memory` (см. значения в `agents/prompts.py`).
+2. Создайте сервисный аккаунт в Google Cloud, скачайте JSON-ключ, включите **Google Sheets API** (и при необходимости Google Drive API) для проекта и дайте аккаунту доступ **Editor** к таблице.
+3. Скопируйте файл `.streamlit/secrets.example.toml` в `.streamlit/secrets.toml` и вставьте туда URL таблицы и значения из JSON-ключа (сохраняйте переносы строк в `private_key`).
+4. Установите зависимости и запустите приложение локально: `uv sync && uv run streamlit run app.py`.
+5. В боковой панели появится редактор промптов; изменения сохраняются в таблицу и видны всем пользователям.
 
 ## Особенности
 

@@ -3,11 +3,14 @@ from core.storage import MemoryStorage
 from langchain.schema import BaseMessage, HumanMessage, AIMessage
 from typing import List, Dict, Optional
 
+from services.prompt_store import PromptStore
+
 class TherapyOrchestrator:
     """Главный оркестратор системы"""
     
-    def __init__(self, use_memory: bool = True):
-        self.graph = TherapyGraph()
+    def __init__(self, use_memory: bool = True, prompt_store: Optional[PromptStore] = None):
+        self.prompt_store = prompt_store or PromptStore()
+        self.graph = TherapyGraph(prompt_store=self.prompt_store)
         self.storage = MemoryStorage() if use_memory else None
         self.session_id: Optional[int] = None
         self.messages: List[BaseMessage] = []
@@ -56,3 +59,10 @@ class TherapyOrchestrator:
         if self.storage and self.session_id:
             return self.storage.get_session_history(self.session_id)
         return []
+
+    def refresh_prompts(self) -> None:
+        """Reload prompts for all agents from the shared store."""
+
+        if self.prompt_store:
+            self.prompt_store.clear_cache()
+        self.graph.refresh_prompts()

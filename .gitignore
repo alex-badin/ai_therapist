@@ -155,3 +155,7 @@ Temporary Items
 
 # Streamlit
 .streamlit/
+!.streamlit/
+.streamlit/*
+!.streamlit/secrets.example.toml
+.uv-cache/
